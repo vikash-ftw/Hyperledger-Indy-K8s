@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: indy-pvc-worker1
+  namespace: indy
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: local-storage
+  volumeName: indy-pv-worker1
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: indy-pvc-worker2
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: local-storage
+  volumeName: indy-pv-worker2

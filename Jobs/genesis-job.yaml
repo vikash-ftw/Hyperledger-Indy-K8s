@@ -1,0 +1,23 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: generate-indy-genesis
+  namespace: indy
+spec:
+  template:
+    spec:
+      containers:
+      - name: indy-cli
+        image: vikashftw/indy-node:1.0 # Replace with your Docker image
+        command: ["/bin/bash", "-c"]
+        # This script generates the files and immediately cats them to the logs
+        args: 
+        - >
+          generate_indy_pool_transactions --nodes 4 --clients 5 --nodeNum 1 2 3 4 
+          --ips 'indy-node-1.indy-pool.indy.svc.cluster.local,indy-node-2.indy-pool.indy.svc.cluster.local,indy-node-3.indy-pool.indy.svc.cluster.local,indy-node-4.indy-pool.indy.svc.cluster.local' &&
+          echo "=== COPY BELOW TO pool_transactions_genesis ===" &&
+          cat /var/lib/indy/indy_prod/pool_transactions_genesis &&
+          echo "=== COPY BELOW TO domain_transactions_genesis ===" &&
+          cat /var/lib/indy/indy_prod/domain_transactions_genesis
+      restartPolicy: Never
+  backoffLimit: 1

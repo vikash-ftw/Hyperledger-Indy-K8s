@@ -1,0 +1,75 @@
+# ==========================================
+# Client Access for Node 1
+# ==========================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: indy-client-node-1
+  namespace: indy
+spec:
+  type: NodePort
+  selector:
+    instance: node-1 # Targets ONLY Node 1
+  ports:
+    - name: client-port
+      protocol: TCP
+      port: 9702
+      targetPort: 9702
+      nodePort: 30701 # External Port for Node 1
+---
+# ==========================================
+# Client Access for Node 2
+# ==========================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: indy-client-node-2
+  namespace: indy
+spec:
+  type: NodePort
+  selector:
+    instance: node-2 # Targets ONLY Node 2
+  ports:
+    - name: client-port
+      protocol: TCP
+      port: 9702
+      targetPort: 9702
+      nodePort: 30702 # External Port for Node 2
+---
+# ==========================================
+# Client Access for Node 3
+# ==========================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: indy-client-node-3
+  namespace: indy
+spec:
+  type: NodePort
+  selector:
+    instance: node-3 # Targets ONLY Node 3
+  ports:
+    - name: client-port
+      protocol: TCP
+      port: 9702
+      targetPort: 9702
+      nodePort: 30703 # External Port for Node 3
+---
+# ==========================================
+# Client Access for Node 4
+# ==========================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: indy-client-node-4
+  namespace: indy
+spec:
+  type: NodePort
+  selector:
+    instance: node-4 # Targets ONLY Node 4
+  ports:
+    - name: client-port
+      protocol: TCP
+      port: 9702
+      targetPort: 9702
+      nodePort: 30704 # External Port for Node 4

@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: indy-node-4
+  namespace: indy
+spec:
+  serviceName: "indy-pool"
+  selector:
+    matchLabels:
+      app: indy-node
+      instance: node-4
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: indy-node
+        instance: node-4
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - worker2
+      volumes:
+        - name: indy-data
+          persistentVolumeClaim:
+            claimName: indy-pvc-worker2
+        - name: config-volume
+          configMap:
+            name: indy-config
+      containers:
+        - name: indy-node
+          image: vikashftw/indy-node:1.0
+          command: ["start_indy_node", "Node4", "0.0.0.0", "9701", "0.0.0.0", "9702"]
+          ports:
+            - containerPort: 9701
+              name: node
+            - containerPort: 9702
+              name: client
+          volumeMounts:
+            - name: indy-data
+              mountPath: /var/lib/indy/indy_prod
+              subPath: node4
+            - name: config-volume
+              mountPath: /etc/indy/indy_config.py
+              subPath: indy_config.py
+            - name: config-volume
+              mountPath: /var/lib/indy/indy_prod/pool_transactions_genesis
+              subPath: pool_transactions_genesis
+            - name: config-volume
+              mountPath: /var/lib/indy/indy_prod/domain_transactions_genesis
+              subPath: domain_transactions_genesis
