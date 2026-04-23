@@ -26,6 +26,7 @@ apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: indy-pv-worker2
+  namespace: indy
 spec:
   capacity:
     storage: 20Gi
