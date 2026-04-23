@@ -6,18 +6,45 @@ metadata:
 spec:
   template:
     spec:
+      serviceAccountName: genesis-updater  # use rbac permission
       containers:
       - name: indy-cli
-        image: vikashftw/indy-node:1.0 # Replace with your Docker image
+        image: vikashftw/indy-node:1.0
+        imagePullPolicy: Always
         command: ["/bin/bash", "-c"]
-        # This script generates the files and immediately cats them to the logs
         args: 
-        - >
-          generate_indy_pool_transactions --nodes 4 --clients 5 --nodeNum 1 2 3 4 
-          --ips 'indy-node-1.indy-pool.indy.svc.cluster.local,indy-node-2.indy-pool.indy.svc.cluster.local,indy-node-3.indy-pool.indy.svc.cluster.local,indy-node-4.indy-pool.indy.svc.cluster.local' &&
-          echo "=== COPY BELOW TO pool_transactions_genesis ===" &&
-          cat /var/lib/indy/indy_prod/pool_transactions_genesis &&
-          echo "=== COPY BELOW TO domain_transactions_genesis ===" &&
-          cat /var/lib/indy/indy_prod/domain_transactions_genesis
+        - |
+          # 1. Provide the complete directory map to Python dependencies
+          cat << 'EOF' > /etc/indy/indy_config.py
+          NETWORK_NAME = 'indy_prod'
+          GENESIS_DIR = '/var/lib/indy'
+          KEYS_DIR = '/var/lib/indy'
+          NODE_DATA_DIR = '/var/lib/indy'
+          PLUGINS_DIR = '/var/lib/indy'
+          NODE_INFO_DIR = '/var/lib/indy'
+          EOF
+          
+          # 2. Run the Genesis Generation
+          echo "=== GENERATING GENESIS STATE ==="
+          generate_indy_pool_transactions --nodes 4 --clients 5 --nodeNum 1 2 3 4 --ips 'indy-node-1.indy-pool.indy.svc.cluster.local,indy-node-2.indy-pool.indy.svc.cluster.local,indy-node-3.indy-pool.indy.svc.cluster.local,indy-node-4.indy-pool.indy.svc.cluster.local'
+          
+          # 3. Locate the generated files dynamically
+          POOL_FILE=$(find / -name "pool_transactions_genesis" 2>/dev/null | head -n 1)
+          DOMAIN_FILE=$(find / -name "domain_transactions_genesis" 2>/dev/null | head -n 1)
+          
+          # 4. Download kubectl directly to system binaries
+          echo "=== DOWNLOADING KUBECTL ==="
+          apt-get update -y && apt-get install -y curl ca-certificates
+          curl -fL --retry 3 -o /usr/local/bin/kubectl "https://dl.k8s.io/release/v1.33.7/bin/linux/amd64/kubectl"
+          chmod +x /usr/local/bin/kubectl
+          
+          # 5. PUSH TO CONFIGMAP
+          echo "=== PUSHING TO KUBERNETES CONFIGMAP ==="
+          /usr/local/bin/kubectl create configmap indy-config \
+            --from-file=pool_transactions_genesis=$POOL_FILE \
+            --from-file=domain_transactions_genesis=$DOMAIN_FILE \
+            -n indy --dry-run=client -o yaml | /usr/local/bin/kubectl apply -f -
+            
+          echo "=== AUTOMATION COMPLETE! ==="
       restartPolicy: Never
   backoffLimit: 1
