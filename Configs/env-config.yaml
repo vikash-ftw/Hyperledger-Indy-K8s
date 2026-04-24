@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: indy-env-config
+  namespace: indy
+data:
+  indy_config.py: |
+    NETWORK_NAME = 'indy_prod'
+    
+    # 1. Core Data (Mapped to PVC)
+    GENESIS_DIR = '/var/lib/indy'
+    KEYS_DIR = '/var/lib/indy'
+    NODE_DATA_DIR = '/var/lib/indy'
+    PLUGINS_DIR = '/var/lib/indy'
+    NODE_INFO_DIR = '/var/lib/indy'
+    
+    # 2. Backups & Logs (Mapped to PVC)
+    BACKUP_DIR = '/var/lib/indy/backups'
+    LOG_DIR = '/var/lib/indy/logs'
+    LEDGER_DIR = '/var/lib/indy'
