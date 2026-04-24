@@ -25,32 +25,61 @@ spec:
                     operator: In
                     values:
                       - worker2
+      # THE DATA LAYER
       volumes:
-        - name: indy-data
+        - name: indy-data                    # The Local Persistent Volume
           persistentVolumeClaim:
             claimName: indy-pvc-worker2
-        - name: config-volume
+        - name: genesis-volume               # The automated Genesis files
           configMap:
             name: indy-config
+        - name: env-volume                   # The pristine Python config
+          configMap:
+            name: indy-env-config
+
       containers:
         - name: indy-node
           image: vikashftw/indy-node:1.0
-          command: ["start_indy_node", "Node4", "0.0.0.0", "9701", "0.0.0.0", "9702"]
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              # 1. Log bridging to stdout (Kubernetes Native Logging)
+              mkdir -p /var/lib/indy/logs/indy_prod
+              touch /var/lib/indy/logs/indy_prod/Node4.log
+              tail -f /var/lib/indy/logs/indy_prod/Node4.log &
+              
+              # 2. Idempotent Key Generation (The Production Standard)
+              # Check if the keys directory exists on the Persistent Volume.
+              if [ ! -d "/var/lib/indy/indy_prod/keys/Node4" ]; then
+                echo "=== FIRST BOOT DETECTED: Initializing Node Keys ==="
+                # We use the exact 32-character seed used during Genesis generation
+                init_indy_node Node4 0.0.0.0 9701 0.0.0.0 9702 000000000000000000000000000Node4
+              else
+                echo "=== EXISTING STATE DETECTED: Keys found on Persistent Volume. Skipping init. ==="
+              fi
+              
+              # 3. Start the node
+              start_indy_node Node4 0.0.0.0 9701 0.0.0.0 9702
           ports:
             - containerPort: 9701
               name: node
             - containerPort: 9702
               name: client
+
+          # THE MOUNT LAYER
           volumeMounts:
+            # 1. Mount the ENTIRE Indy directory to the PVC
             - name: indy-data
-              mountPath: /var/lib/indy/indy_prod
-              subPath: node4
-            - name: config-volume
-              mountPath: /etc/indy/indy_config.py
-              subPath: indy_config.py
-            - name: config-volume
+              mountPath: /var/lib/indy
+              
+            # 2. Mount the configurations using subPath to avoid overwriting directories
+            - name: genesis-volume
               mountPath: /var/lib/indy/indy_prod/pool_transactions_genesis
               subPath: pool_transactions_genesis
-            - name: config-volume
+            - name: genesis-volume
               mountPath: /var/lib/indy/indy_prod/domain_transactions_genesis
               subPath: domain_transactions_genesis
+            - name: env-volume
+              mountPath: /etc/indy/indy_config.py
+              subPath: indy_config.py
