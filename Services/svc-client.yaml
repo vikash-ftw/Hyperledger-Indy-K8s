@@ -9,13 +9,13 @@ metadata:
 spec:
   type: NodePort
   selector:
-    instance: node-1 # Targets ONLY Node 1
+    instance: node-1 
   ports:
     - name: client-port
       protocol: TCP
       port: 9702
       targetPort: 9702
-      nodePort: 30701 # External Port for Node 1
+      nodePort: 30701
 ---
 # ==========================================
 # Client Access for Node 2
@@ -28,13 +28,13 @@ metadata:
 spec:
   type: NodePort
   selector:
-    instance: node-2 # Targets ONLY Node 2
+    instance: node-2
   ports:
     - name: client-port
       protocol: TCP
-      port: 9702
-      targetPort: 9702
-      nodePort: 30702 # External Port for Node 2
+      port: 9704
+      targetPort: 9704
+      nodePort: 30702
 ---
 # ==========================================
 # Client Access for Node 3
@@ -47,13 +47,13 @@ metadata:
 spec:
   type: NodePort
   selector:
-    instance: node-3 # Targets ONLY Node 3
+    instance: node-3 
   ports:
     - name: client-port
       protocol: TCP
-      port: 9702
-      targetPort: 9702
-      nodePort: 30703 # External Port for Node 3
+      port: 9706
+      targetPort: 9706
+      nodePort: 30703 
 ---
 # ==========================================
 # Client Access for Node 4
@@ -66,10 +66,10 @@ metadata:
 spec:
   type: NodePort
   selector:
-    instance: node-4 # Targets ONLY Node 4
+    instance: node-4
   ports:
     - name: client-port
       protocol: TCP
-      port: 9702
-      targetPort: 9702
-      nodePort: 30704 # External Port for Node 4
+      port: 9708
+      targetPort: 9708
+      nodePort: 30704

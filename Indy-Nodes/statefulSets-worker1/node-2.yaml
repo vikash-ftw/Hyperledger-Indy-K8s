@@ -54,13 +54,13 @@ spec:
               if [ ! -d "/var/lib/indy/indy_prod/keys/Node2" ]; then
                 echo "=== FIRST BOOT DETECTED: Initializing Node Keys ==="
                 # We use the exact 32-character seed used during Genesis generation
-                init_indy_node Node2 0.0.0.0 9701 0.0.0.0 9702 000000000000000000000000000Node2
+                init_indy_node Node2 0.0.0.0 9703 0.0.0.0 9704 000000000000000000000000000Node2
               else
                 echo "=== EXISTING STATE DETECTED: Keys found on Persistent Volume. Skipping init. ==="
               fi
               
               # 3. Start the node
-              start_indy_node Node2 0.0.0.0 9701 0.0.0.0 9702
+              start_indy_node Node2 0.0.0.0 9703 0.0.0.0 9704
           ports:
             - containerPort: 9701
               name: node

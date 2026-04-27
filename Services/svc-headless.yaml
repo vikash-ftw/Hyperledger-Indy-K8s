@@ -7,10 +7,22 @@ metadata:
     app: indy-node
 spec:
   clusterIP: None 
-  ports:
-  - port: 9701
-    name: node-port
-  - port: 9702
-    name: client-port
   selector:
     app: indy-node
+  ports:
+    - port: 9701
+      name: node-1-port
+    - port: 9702
+      name: client-1-port
+    - port: 9703
+      name: node-2-port
+    - port: 9704
+      name: client-2-port
+    - port: 9705
+      name: node-3-port
+    - port: 9706
+      name: client-3-port
+    - port: 9707
+      name: node-4-port
+    - port: 9708
+      name: client-4-port
