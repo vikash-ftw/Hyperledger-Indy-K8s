@@ -1,0 +1,90 @@
+# 1. Provide the UI with the exact Network ID to match our Daemon's Database
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: indyscan-api-config
+  namespace: indy
+data:
+  networks.json: |
+    [
+      {
+        "id": "k8s", 
+        "display": "K8s Production Pool",
+        "description": "Indy Validator Network on K8s",
+        "es": {
+          "index": "txs-k8s"
+        }
+      }
+    ]
+---
+# 2. The Web Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: indyscan-web
+  namespace: indy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: indyscan-web
+  template:
+    metadata:
+      labels:
+        app: indyscan-web
+    spec:
+      volumes:
+        - name: api-config-volume
+          configMap:
+            name: indyscan-api-config
+            
+      containers:
+      # 1. THE API LAYER
+      - name: indyscan-api
+        image: pstas/indyscan-api:latest
+        env:
+        - name: ES_URL
+          value: "http://elasticsearch:9200"
+        - name: PORT
+          value: "3000"
+        - name: NETWORKS_CONFIG_PATH
+          value: "/etc/indyscan/networks.json"
+          
+        volumeMounts:
+        - name: api-config-volume
+          mountPath: /etc/indyscan/networks.json
+          subPath: networks.json
+        ports:
+        - containerPort: 3000
+          name: api-port
+          
+      # 2. THE UI LAYER
+      - name: indyscan-webapp
+        image: pstas/indyscan-webapp:latest
+        env:
+        - name: INDYSCAN_API_URL
+          value: "http://localhost:3000"
+        - name: PORT
+          value: "8080"
+        - name: DAEMON_WS_URL
+          value: "ws://localhost:3000"
+          
+        ports:
+        - containerPort: 8080
+          name: web-port
+---
+# 3. The Exposure Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: indyscan-service
+  namespace: indy
+spec:
+  type: NodePort
+  selector:
+    app: indyscan-web
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+      nodePort: 32300

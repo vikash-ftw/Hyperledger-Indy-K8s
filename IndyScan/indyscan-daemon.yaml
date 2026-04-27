@@ -1,0 +1,78 @@
+# 1. The ConfigMap for the Daemon's v4+ Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: indyscan-daemon-config
+  namespace: indy
+data:
+  workers.json: |
+    {
+      "env": {
+        "INDY_NETWORK": "K8s-Production",
+        "ES_URL": "http://elasticsearch:9200",
+        "ES_INDEX": "txs-k8s"
+      },
+      "workersBuildersTemplate": [
+        {
+          "builder": "rtwSerialization",
+          "params": {
+            "indyNetworkId": "{{{INDY_NETWORK}}}",
+            "genesisPath": "/tmp/genesis/pool_transactions_genesis",
+            "esIndex": "{{{ES_INDEX}}}",
+            "esUrl": "{{{ES_URL}}}",
+            "workerTiming": "MEDIUM"
+          }
+        },
+        {
+          "builder": "rtwExpansion",
+          "params": {
+            "indyNetworkId": "{{{INDY_NETWORK}}}",
+            "esUrl": "{{{ES_URL}}}",
+            "esIndex": "{{{ES_INDEX}}}",
+            "workerTiming": "MEDIUM"
+          }
+        }
+      ]
+    }
+
+---
+# 2. The Daemon Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: indyscan-daemon
+  namespace: indy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: indyscan-daemon
+  template:
+    metadata:
+      labels:
+        app: indyscan-daemon
+    spec:
+      volumes:
+        - name: genesis-volume
+          configMap:
+            name: indy-config
+        - name: daemon-config-volume
+          configMap:
+            name: indyscan-daemon-config
+            
+      containers:
+      - name: daemon
+        image: pstas/indyscan-daemon:latest
+        env:
+        - name: AUTOSTART
+          value: "true"
+        - name: WORKER_CONFIGS
+          value: "/etc/indyscan/workers.json"
+          
+        volumeMounts:
+        - name: genesis-volume
+          mountPath: /tmp/genesis/pool_transactions_genesis
+          subPath: pool_transactions_genesis
+        - name: daemon-config-volume
+          mountPath: /etc/indyscan/workers.json
+          subPath: workers.json

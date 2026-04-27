@@ -1,0 +1,77 @@
+# The Elasticsearch Database StatefulSet
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: indyscan-elastic
+  namespace: indy
+spec:
+  serviceName: "elasticsearch"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: indyscan-elastic
+  template:
+    metadata:
+      labels:
+        app: indyscan-elastic
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - worker2
+      volumes:
+        - name: elastic-data
+          persistentVolumeClaim:
+            claimName: indy-pvc-worker2
+
+      # Fix permission issue
+      initContainers:
+      - name: fix-permissions
+        image: busybox
+        command: ["sh", "-c", "chown -R 1000:1000 /usr/share/elasticsearch/data"]
+        securityContext:
+          runAsUser: 0 # Run as root just long enough to change ownership
+        volumeMounts:
+        - name: elastic-data
+          mountPath: /usr/share/elasticsearch/data
+          subPath: elastic/data
+
+      containers:
+      - name: elasticsearch
+        # IndyScan specifically requires ES version 7.x
+        image: docker.elastic.co/elasticsearch/elasticsearch:7.17.9
+        env:
+        - name: discovery.type
+          value: single-node
+        - name: ES_JAVA_OPTS
+          value: "-Xms1g -Xmx1g" # Caps RAM usage to 1GB to protect your K8s workers
+        ports:
+        - containerPort: 9200
+          name: rest
+        - containerPort: 9300
+          name: inter-node
+        volumeMounts:
+        - name: elastic-data
+          mountPath: /usr/share/elasticsearch/data
+          subPath: elastic/data
+---
+# The Headless Service for Elasticsearch internal routing
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticsearch
+  namespace: indy
+spec:
+  clusterIP: None
+  selector:
+    app: indyscan-elastic
+  ports:
+    - port: 9200
+      name: rest
+    - port: 9300
+      name: inter-node
