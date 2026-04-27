@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-explorer
+  namespace: indy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web-explorer
+  template:
+    metadata:
+      labels:
+        app: web-explorer
+    spec:
+      # Grab the Genesis ConfigMap from the cluster
+      volumes:
+        - name: genesis-volume
+          configMap:
+            name: indy-config
+            
+      containers:
+        - name: webserver
+          image: vikashftw/indy-web-explorer:1.0  
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              echo "=== STARTING EXPLORER WEBSERVER ==="
+              ./scripts/start_webserver.sh
+              
+          env:
+            # Use the official Indy default Trustee seed
+            - name: LEDGER_SEED
+              value: "000000000000000000000000Trustee1"
+            - name: REGISTER_NEW_DIDS
+              value: "True"                 
+            - name: LEDGER_INSTANCE_NAME
+              value: "Indy K8s Network"
+            - name: LEDGER_DESCRIPTION
+              value: "An Indy Ledger Explorer"
+            - name: LOG_LEVEL
+              value: "info"
+            # Add this variable to point directly to the K8s ConfigMap mount
+            - name: GENESIS_FILE
+              value: "/tmp/genesis/pool_transactions_genesis"
+            - name: MAX_FETCH
+              value: "5000"
+            - name: RESCAN_TIME
+              value: "30"
+            - name: CONNECT_TIMEOUT
+              value: "20"
+            # Suppress Javascript console errors for analytics
+            - name: WEB_ANALYTICS
+              value: "False"
+              
+          ports:
+            - containerPort: 8000
+            
+          # Mount the Genesis ConfigMap into a temporary readable directory
+          volumeMounts:
+            - name: genesis-volume
+              mountPath: /tmp/genesis
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: indy-explorer-service
+  namespace: indy
+spec:
+  type: NodePort
+  selector:
+    app: web-explorer
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+      nodePort: 32200
