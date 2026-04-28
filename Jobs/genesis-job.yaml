@@ -38,7 +38,7 @@ spec:
               
               # Run the Genesis Generation (Ordinals intact)
               echo "=== GENERATING GENESIS STATE ==="
-              generate_indy_pool_transactions --nodes 4 --clients 5 --nodeNum 1 2 3 4 --ips 'indy-node-1-0.indy-pool.indy.svc.cluster.local,indy-node-2-0.indy-pool.indy.svc.cluster.local,indy-node-3-0.indy-pool.indy.svc.cluster.local,indy-node-4-0.indy-pool.indy.svc.cluster.local'
+              generate_indy_pool_transactions --nodes 4 --clients 1 --nodeNum 1 2 3 4 --ips 'indy-node-1-0.indy-pool.indy.svc.cluster.local,indy-node-2-0.indy-pool.indy.svc.cluster.local,indy-node-3-0.indy-pool.indy.svc.cluster.local,indy-node-4-0.indy-pool.indy.svc.cluster.local'
               
               # Locate the generated files dynamically and copy to the shared volume
               echo "=== COPYING TO SHARED VOLUME ==="
