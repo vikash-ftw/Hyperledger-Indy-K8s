@@ -63,9 +63,9 @@ spec:
               start_indy_node Node3 0.0.0.0 9705 0.0.0.0 9706
 
           ports:
-            - containerPort: 9701
+            - containerPort: 9705
               name: node
-            - containerPort: 9702
+            - containerPort: 9706
               name: client
 
           # THE MOUNT LAYER
