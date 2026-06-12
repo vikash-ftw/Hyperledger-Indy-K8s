@@ -13,8 +13,8 @@ spec:
   ports:
     - name: client-port
       protocol: TCP
-      port: 9702
-      targetPort: 9702
+      port: 30701
+      targetPort: 30701
       nodePort: 30701
 ---
 # ==========================================
@@ -32,8 +32,8 @@ spec:
   ports:
     - name: client-port
       protocol: TCP
-      port: 9704
-      targetPort: 9704
+      port: 30702
+      targetPort: 30702
       nodePort: 30702
 ---
 # ==========================================
@@ -51,9 +51,9 @@ spec:
   ports:
     - name: client-port
       protocol: TCP
-      port: 9706
-      targetPort: 9706
-      nodePort: 30703 
+      port: 30703
+      targetPort: 30703
+      nodePort: 30703
 ---
 # ==========================================
 # Client Access for Node 4
@@ -70,6 +70,6 @@ spec:
   ports:
     - name: client-port
       protocol: TCP
-      port: 9708
-      targetPort: 9708
+      port: 30704
+      targetPort: 30704
       nodePort: 30704

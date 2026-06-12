@@ -9,22 +9,26 @@ spec:
     spec:
       serviceAccountName: genesis-updater
       restartPolicy: Never
-      
-      # 1. The Shared Hard Drive to pass files between containers
+
       volumes:
         - name: shared-data
           emptyDir: {}
-          
-      # 2. The Generator (Runs first, generates files, then exits)
+
       initContainers:
         - name: generator
           image: vikashftw/indy-node:1.0
           imagePullPolicy: Always
+          # dynamically grab the worker Node IP from Kubernetes
+          env:
+            - name: EXTERNAL_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
           volumeMounts:
             - name: shared-data
               mountPath: /shared
           command: ["/bin/bash", "-c"]
-          args: 
+          args:
             - |
               # Preserve the vital Python environment mapping
               cat << 'EOF' > /etc/indy/indy_config.py
@@ -35,20 +39,39 @@ spec:
               PLUGINS_DIR = '/var/lib/indy'
               NODE_INFO_DIR = '/var/lib/indy'
               EOF
-              
+
               # Run the Genesis Generation (Ordinals intact)
               echo "=== GENERATING GENESIS STATE ==="
               generate_indy_pool_transactions --nodes 4 --clients 1 --nodeNum 1 2 3 4 --ips 'indy-node-1-0.indy-pool.indy.svc.cluster.local,indy-node-2-0.indy-pool.indy.svc.cluster.local,indy-node-3-0.indy-pool.indy.svc.cluster.local,indy-node-4-0.indy-pool.indy.svc.cluster.local'
-              
+
               # Locate the generated files dynamically and copy to the shared volume
               echo "=== COPYING TO SHARED VOLUME ==="
               POOL_FILE=$(find / -name "pool_transactions_genesis" 2>/dev/null | head -n 1)
               DOMAIN_FILE=$(find / -name "domain_transactions_genesis" 2>/dev/null | head -n 1)
-              
+
+              # Apply custom port mappings via sed
+              echo "=== APPLYING CUSTOM PORT MAPPINGS ==="
+              echo "Dynamically captured IP from Kubernetes: $EXTERNAL_IP"
+
+              # Node 1
+              sed -i '/"alias":"Node1"/s/"client_port":[0-9]*/"client_port":30701/g' $POOL_FILE
+              sed -i '/"alias":"Node1"/s#"client_ip":"[^"]*"#"client_ip":"'"$EXTERNAL_IP"'"#g' $POOL_FILE
+
+              # Node 2
+              sed -i '/"alias":"Node2"/s/"client_port":[0-9]*/"client_port":30702/g' $POOL_FILE
+              sed -i '/"alias":"Node2"/s#"client_ip":"[^"]*"#"client_ip":"'"$EXTERNAL_IP"'"#g' $POOL_FILE
+
+              # Node 3
+              sed -i '/"alias":"Node3"/s/"client_port":[0-9]*/"client_port":30703/g' $POOL_FILE
+              sed -i '/"alias":"Node3"/s#"client_ip":"[^"]*"#"client_ip":"'"$EXTERNAL_IP"'"#g' $POOL_FILE
+
+              # Node 4
+              sed -i '/"alias":"Node4"/s/"client_port":[0-9]*/"client_port":30704/g' $POOL_FILE
+              sed -i '/"alias":"Node4"/s#"client_ip":"[^"]*"#"client_ip":"'"$EXTERNAL_IP"'"#g' $POOL_FILE
+
               cp $POOL_FILE /shared/pool_transactions_genesis
               cp $DOMAIN_FILE /shared/domain_transactions_genesis
-              
-      # 3. The Pusher (Runs only after the generator succeeds)
+
       containers:
         - name: configmap-pusher
           image: bitnami/kubectl:latest
@@ -59,10 +82,9 @@ spec:
           args:
             - |
               echo "=== PUSHING TO KUBERNETES CONFIGMAP ==="
-              # The kubectl binary is native to this container, no downloading required
               kubectl create configmap indy-config \
                 --from-file=pool_transactions_genesis=/shared/pool_transactions_genesis \
                 --from-file=domain_transactions_genesis=/shared/domain_transactions_genesis \
                 -n indy --dry-run=client -o yaml | kubectl apply -f -
-                
+
               echo "=== AUTOMATION COMPLETE! ==="

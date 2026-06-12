@@ -12,17 +12,17 @@ spec:
   ports:
     - port: 9701
       name: node-1-port
-    - port: 9702
+    - port: 30701
       name: client-1-port
-    - port: 9703
+    - port: 9702
       name: node-2-port
-    - port: 9704
+    - port: 30702
       name: client-2-port
-    - port: 9705
+    - port: 9703
       name: node-3-port
-    - port: 9706
+    - port: 30703
       name: client-3-port
-    - port: 9707
+    - port: 9704
       name: node-4-port
-    - port: 9708
+    - port: 30704
       name: client-4-port
