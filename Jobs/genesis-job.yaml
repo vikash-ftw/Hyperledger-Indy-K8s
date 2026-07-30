@@ -56,18 +56,22 @@ spec:
               # Node 1
               sed -i '/"alias":"Node1"/s/"client_port":[0-9]*/"client_port":30701/g' $POOL_FILE
               sed -i '/"alias":"Node1"/s#"client_ip":"[^"]*"#"client_ip":"'"$EXTERNAL_IP"'"#g' $POOL_FILE
+              sed -i '/"alias":"Node1"/s/"node_port":[0-9]*/"node_port":9701/g' $POOL_FILE
 
               # Node 2
               sed -i '/"alias":"Node2"/s/"client_port":[0-9]*/"client_port":30702/g' $POOL_FILE
               sed -i '/"alias":"Node2"/s#"client_ip":"[^"]*"#"client_ip":"'"$EXTERNAL_IP"'"#g' $POOL_FILE
+              sed -i '/"alias":"Node2"/s/"node_port":[0-9]*/"node_port":9702/g' $POOL_FILE
 
               # Node 3
               sed -i '/"alias":"Node3"/s/"client_port":[0-9]*/"client_port":30703/g' $POOL_FILE
               sed -i '/"alias":"Node3"/s#"client_ip":"[^"]*"#"client_ip":"'"$EXTERNAL_IP"'"#g' $POOL_FILE
+              sed -i '/"alias":"Node3"/s/"node_port":[0-9]*/"node_port":9703/g' $POOL_FILE
 
               # Node 4
               sed -i '/"alias":"Node4"/s/"client_port":[0-9]*/"client_port":30704/g' $POOL_FILE
               sed -i '/"alias":"Node4"/s#"client_ip":"[^"]*"#"client_ip":"'"$EXTERNAL_IP"'"#g' $POOL_FILE
+              sed -i '/"alias":"Node4"/s/"node_port":[0-9]*/"node_port":9704/g' $POOL_FILE
 
               cp $POOL_FILE /shared/pool_transactions_genesis
               cp $DOMAIN_FILE /shared/domain_transactions_genesis
@@ -86,5 +90,10 @@ spec:
                 --from-file=pool_transactions_genesis=/shared/pool_transactions_genesis \
                 --from-file=domain_transactions_genesis=/shared/domain_transactions_genesis \
                 -n indy --dry-run=client -o yaml | kubectl apply -f -
+
+              echo "=== SETTING OWNER REFERENCE (auto-cleanup on Job delete) ==="
+              JOB_UID=$(kubectl get job generate-indy-genesis -n indy -o jsonpath='{.metadata.uid}')
+              kubectl patch configmap indy-config -n indy --type merge -p \
+                "{\"metadata\":{\"ownerReferences\":[{\"apiVersion\":\"batch/v1\",\"kind\":\"Job\",\"name\":\"generate-indy-genesis\",\"uid\":\"$JOB_UID\",\"controller\":true,\"blockOwnerDeletion\":true}]}}"
 
               echo "=== AUTOMATION COMPLETE! ==="
